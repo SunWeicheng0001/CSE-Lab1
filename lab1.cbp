@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="lab1" />
+		<Option makefile="GNUmakefile" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="lab1_tester" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<MakeCommands>
+					<Build command="$make -f $makefile" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile" />
+					<SilentBuild command="$make -f $makefile &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/lab1" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+		</Compiler>
+		<Unit filename="extent_client.cc" />
+		<Unit filename="extent_client.d" />
+		<Unit filename="extent_client.h" />
+		<Unit filename="extent_protocol.h" />
+		<Unit filename="extent_server.cc" />
+		<Unit filename="extent_server.d" />
+		<Unit filename="extent_server.h" />
+		<Unit filename="extent_smain.cc" />
+		<Unit filename="gettime.cc" />
+		<Unit filename="gettime.h" />
+		<Unit filename="inode_manager.cc" />
+		<Unit filename="inode_manager.d" />
+		<Unit filename="inode_manager.h" />
+		<Unit filename="lab1_tester.cc" />
+		<Unit filename="lab1_tester.d" />
+		<Unit filename="lang/algorithm.h" />
+		<Unit filename="lang/verify.h" />
+		<Unit filename="rpc/connection.cc" />
+		<Unit filename="rpc/connection.h" />
+		<Unit filename="rpc/fifo.h" />
+		<Unit filename="rpc/jsl_log.cc" />
+		<Unit filename="rpc/jsl_log.h" />
+		<Unit filename="rpc/marshall.h" />
+		<Unit filename="rpc/method_thread.h" />
+		<Unit filename="rpc/pollmgr.cc" />
+		<Unit filename="rpc/pollmgr.h" />
+		<Unit filename="rpc/rpc.cc" />
+		<Unit filename="rpc/rpc.h" />
+		<Unit filename="rpc/rpctest.cc" />
+		<Unit filename="rpc/slock.h" />
+		<Unit filename="rpc/thr_pool.cc" />
+		<Unit filename="rpc/thr_pool.h" />
+		<Unit filename="test.cc" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
