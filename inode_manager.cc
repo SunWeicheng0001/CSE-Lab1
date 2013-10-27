@@ -1,5 +1,7 @@
 #include "inode_manager.h"
 #include <cmath>
+#include <iostream>
+#include <cstdio>
 // disk layer -----------------------------------------
 
 disk::disk()
@@ -189,10 +191,14 @@ inode_manager::free_inode(uint32_t inum)
         free_inode(node->blocks[NDIRECT]);
     for (int i = 0; i < node->nblock && i < NDIRECT; i++)
         bm->free_block(node->blocks[i]);
-    //put a new inode to the original place
-    delete node;
-    node = new inode();
-    put_inode(inum, node);
+    node->size = 0;
+    memset(node->blocks,0,NDIRECT+1);
+    timespec time;
+    clock_gettime(CLOCK_REALTIME,&time);
+    node->atime = time.tv_nsec;
+    node->mtime = time.tv_nsec;
+    put_inode(inum,node);
+    return;
 }
 
 
@@ -268,16 +274,23 @@ inode_manager::read_file(uint32_t inum, char **buf_out, int *size)
     int nblock = (int)ceil((double)*size/(double)BLOCK_SIZE);
     *buf_out = new char[nblock* BLOCK_SIZE];
     char *buf = *buf_out;
-    while (true)
+
+    for (int i = 0; i < MIN(node->nblock,NDIRECT); i++)
     {
-        for (int i = 0; i < node->nblock && i < NDIRECT; i++)
-        {
-            bm->read_block(node->blocks[i], buf);
-            buf += BLOCK_SIZE;
-        }
-        if (node->nblock <= NDIRECT)
-            break;
-        node = get_inode(node->blocks[NDIRECT]);
+        bm->read_block(node->blocks[i], buf);
+        buf += BLOCK_SIZE;
+    }
+    if (node->nblock <= NDIRECT)
+        return;
+    int indir_blockid = node->blocks[NDIRECT];
+    char inblock[BLOCK_SIZE];
+    bm->read_block(indir_blockid,inblock);
+    int* inblobk_int = (int *)inblock;
+    int length = node->nblock - NDIRECT;
+    for(int i=0; i<length; i++)
+    {
+        bm->read_block(inblobk_int[i],buf);
+        buf += BLOCK_SIZE;
     }
     return;
 }
@@ -304,7 +317,19 @@ inode_manager::write_file(uint32_t inum, const char *buf, int size)
     if(node->nblock>0)
     {
         if(node->nblock > NDIRECT)
-            free_inode(node->blocks[NDIRECT]);
+        {
+            //free_inode(node->blocks[NDIRECT]);
+            blockid_t inb = node->blocks[NDIRECT];
+            char inblock[BLOCK_SIZE];
+            bm->read_block(inb,inblock);
+            int* inblobk_int = (int *)inblock;
+            int length = node->nblock - NDIRECT;
+            for(int i=0; i<length; i++)
+            {
+                bm->free_block(inblobk_int[i]);
+            }
+            bm->free_block(node->blocks[NDIRECT]);
+        }
 
         for (int i = 0; i < node->nblock && i < NDIRECT; i++)
             bm->free_block(node->blocks[i]);
@@ -313,7 +338,8 @@ inode_manager::write_file(uint32_t inum, const char *buf, int size)
     if (bm->rest() < bn_real)
         return;
     node->size = size;
-    node->nblock = bn_cur = MIN(bn_real, NDIRECT);
+    node->nblock = bn_real;
+    bn_cur = MIN(bn_real, NDIRECT);
     for (int i = 0; i < bn_cur; i++)
     {
         node->blocks[i] = bm->alloc_block();
@@ -322,16 +348,23 @@ inode_manager::write_file(uint32_t inum, const char *buf, int size)
         buf += BLOCK_SIZE;
         size -= BLOCK_SIZE;
     }
+
     if (bn_real > bn_cur)
     {
-        node->nblock++;
-        node->blocks[NDIRECT] = alloc_inode(node->type);
-        if(!node->blocks[NDIRECT])
+        node->blocks[NDIRECT] = bm->alloc_block();
+        bm->minus_block();
+        char inblock[BLOCK_SIZE];
+        bm->read_block(node->blocks[NDIRECT],inblock);
+        int* inblobk_int = (int *)inblock;
+        for(int i=0 ; i<bn_real-NDIRECT; i++)
         {
-            free_inode(inum);
-            return;
+            inblobk_int[i] = bm->alloc_block();
+            bm->write_block(inblobk_int[i], buf);
+            bm->minus_block();
+            buf += BLOCK_SIZE;
+            size -= BLOCK_SIZE;
         }
-        write_file(node->blocks[NDIRECT],buf,size);
+        bm->write_block(node->blocks[NDIRECT],inblock);
     }
 
     put_inode(inum, node);
@@ -369,6 +402,14 @@ inode_manager::remove_file(uint32_t inum)
     inode* node = get_inode(inum);
     if(node==NULL)
         return;
-    free_inode(inum);
+
+    if (node->nblock >= NDIRECT)
+        remove_file(node->blocks[NDIRECT]);
+    for (int i = 0; i < node->nblock && i < NDIRECT; i++)
+        bm->free_block(node->blocks[i]);
+    //put a new inode to the original place
+    delete node;
+    node = new inode();
+    put_inode(inum, node);
     //return;
 }
